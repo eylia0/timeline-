@@ -117,12 +117,6 @@ footer{padding-block:28px 40px;color:var(--muted);font-size:13px}
 </header>
 
 <main>
-  <div class="wrap" id="auth" hidden><form class="editor" id="auth-form" style="max-width:420px">
-    <h2 style="font-size:24px">Sign in to your plan</h2>
-    <div class="fields"><label class="wide">Email<input type="email" id="a-email" required autocomplete="username"></label>
-    <label class="wide">Password<input type="password" id="a-pass" required minlength="8" autocomplete="current-password"></label></div>
-    <div class="actions"><button class="btn primary" type="submit">Sign in</button><button class="btn" type="button" id="a-signup">First time: create my account</button></div>
-    <p id="auth-msg" class="meta" style="margin:0;color:var(--muted)" aria-live="polite"></p></form></div>
   <div class="wrap" id="board-wrap"><div id="status" class="notice">Loading the plan…</div>
   <div class="board" id="board" hidden>
     <div class="labels" id="labels"></div>
@@ -152,7 +146,7 @@ footer{padding-block:28px 40px;color:var(--muted);font-size:13px}
     </form>
   </section>
 </main>
-<footer class="wrap">Saved to your Supabase database, on any device you sign in from. The blue chalk line is today. <button class="btn small" id="signout" hidden>Sign out</button></footer>
+<footer class="wrap">Saved to your Supabase database and shows on any device. The blue chalk line is today.</footer>
 
 <script>
 const GROUPS={study:"Uni",build:"Build",show:"Show",business:"Business"};
@@ -305,21 +299,7 @@ function startData(){
   sb.channel("plan").on("postgres_changes",{event:"*",schema:"public",table:"phases"},()=>pull("phases"))
     .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},()=>pull("tasks")).subscribe();
 }
-// ---- sign in ----
-const authBox=$("auth"),authMsg=$("auth-msg");
-function showAuth(on){authBox.hidden=!on;$("board-wrap").hidden=on;document.querySelectorAll("main .sec").forEach(s=>s.hidden=on);$("signout").hidden=on}
-$("auth-form").addEventListener("submit",async e=>{e.preventDefault();authMsg.textContent="Signing in…";
-  const {error}=await sb.auth.signInWithPassword({email:$("a-email").value.trim(),password:$("a-pass").value});
-  authMsg.textContent=error?("Couldn't sign in: "+error.message):""});
-$("a-signup").addEventListener("click",async()=>{const email=$("a-email").value.trim(),password=$("a-pass").value;
-  if(!email||password.length<8){authMsg.textContent="Enter your email and a password of at least 8 characters first.";return}
-  authMsg.textContent="Creating your account…";
-  const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.href.split("#")[0]}});
-  authMsg.textContent=error?("Couldn't create the account: "+error.message):(data.session?"":"Check your email and click the confirmation link, then sign in here.")});
-$("signout").addEventListener("click",()=>sb.auth.signOut());
-let started=false;
-sb.auth.onAuthStateChange((ev,session)=>{if(session){showAuth(false);if(!started){started=true;startData()}}else{showAuth(true);if(started)location.reload()}});
-
+startData();
 </script>
 
 </body>
