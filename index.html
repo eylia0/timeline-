@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<title>Road to the Powerhouse</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a site set-out sheet. A tape-measure ruler is the date axis, a blue chalk line marks today,
+   marking-paint diamonds are the hard deadlines; workstream cards with checklists sit below. */
+:root{
+  --bg:#ECEFF1; --surface:#FFFFFF; --ink:#1B2228; --muted:#5D6973; --line:#D2D8DD; --soft:#F5F7F8;
+  --chalk:#2F6FDB; --paint:#D9482B; --tape:#F2C230; --tape-ink:#2A2310;
+  --g-study:#3D5A80; --g-build:#2D7A66; --g-show:#86507A; --g-business:#8A6337;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161A; --surface:#192026; --ink:#E6EBEE; --muted:#93A1AB; --line:#2B353C; --soft:#1F272E;
+  --chalk:#6FA3FF; --paint:#FF7650; --tape:#D7AC2C; --tape-ink:#1E1806;
+  --g-study:#7FA2D1; --g-build:#5DBFA3; --g-show:#C88BBB; --g-business:#D2A16A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161A; --surface:#192026; --ink:#E6EBEE; --muted:#93A1AB; --line:#2B353C; --soft:#1F272E;
+  --chalk:#6FA3FF; --paint:#FF7650; --tape:#D7AC2C; --tape-ink:#1E1806;
+  --g-study:#7FA2D1; --g-build:#5DBFA3; --g-show:#C88BBB; --g-business:#D2A16A; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:.01em}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+header.top{padding-block:28px 18px;display:grid;gap:16px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(34px,6vw,54px);font-weight:700;line-height:1}
+.deadlines{display:flex;flex-wrap:wrap;gap:10px}
+.dl{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 12px 8px 10px}
+.dl .dia{width:12px;height:12px;background:var(--paint);transform:rotate(45deg);flex:none}
+.dl b{font-weight:600}
+.dl .when{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.dl .count{font-family:var(--display);font-size:22px;font-weight:600;color:var(--paint);line-height:1;margin-left:4px}
+.dl.past{opacity:.55}.dl.past .count{color:var(--muted)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+
+.board{background:var(--surface);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:190px minmax(0,1fr);overflow:hidden}
+.labels{border-right:1px solid var(--line);background:var(--surface);position:relative;z-index:1}
+.labels .lab,.labels .msl,.labels .axis{box-sizing:border-box}
+.labels .lab{height:40px;display:flex;flex-direction:column;justify-content:center;padding:0 12px;border-top:1px solid var(--line);min-width:0}
+.labels .lab .n{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px}
+.labels .lab .d{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.labels .axis{height:58px}
+.labels .msl{height:34px;border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.scroll{overflow-x:auto;min-width:0}
+.scroll svg{display:block}
+.lab button{all:unset;cursor:pointer}
+svg .bar{cursor:pointer}
+svg .bar:hover .track{stroke:var(--ink)}
+svg text{font-family:var(--body)}
+
+.sec{padding-block:26px 6px;display:grid;gap:14px}
+.sec-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}
+.sec-h h2{font-size:28px;font-weight:600}
+.sec-h p{margin:0;color:var(--muted);font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0;scroll-margin-top:16px}
+.card.flash{outline:2px solid var(--chalk)}
+.card-h{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.card-h h3{font-size:22px;font-weight:600;line-height:1.1}
+.card .meta{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.prog{height:6px;background:var(--soft);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%}
+.tasks{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.tasks li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:start;padding:4px 0}
+.tasks input[type=checkbox]{width:17px;height:17px;margin:2px 0 0;accent-color:var(--chalk)}
+.tasks label{font-size:14px;cursor:pointer}
+.tasks li.done label{color:var(--muted);text-decoration:line-through}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:4px}
+.x:hover{color:var(--paint);background:var(--soft)}
+.addtask{display:flex;gap:6px}
+.addtask input{flex:1;min-width:0;border:1px solid var(--line);background:var(--soft);border-radius:5px;padding:6px 9px;font-size:14px}
+.btn{border:1px solid var(--line);background:var(--soft);border-radius:5px;padding:6px 12px;cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn.danger{color:var(--paint)}
+.btn.small{padding:3px 9px;font-size:13px}
+
+.editor{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:grid;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fields label{display:grid;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+.fields input,.fields select{border:1px solid var(--line);background:var(--soft);border-radius:5px;padding:8px 10px;font-size:15px;color:var(--ink);min-width:0}
+.fields .wide{grid-column:1/-1}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.notice{background:var(--soft);border:1px dashed var(--line);border-radius:8px;padding:16px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:6px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+footer{padding-block:28px 40px;color:var(--muted);font-size:13px}
+@media (max-width:640px){.board{grid-template-columns:128px minmax(0,1fr)}.labels .lab .d{display:none}}
+@media (prefers-reduced-motion:no-preference){.card{transition:outline-color .3s}}
+</style>
+<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+
+
+<header class="top wrap">
+  <div class="eyebrow">SideKick · Honours to market</div>
+  <h1>Road to the Powerhouse</h1>
+  <div class="deadlines" id="deadlines"></div>
+  <div class="legend" id="legend"></div>
+</header>
+
+<main>
+  <div class="wrap" id="auth" hidden><form class="editor" id="auth-form" style="max-width:420px">
+    <h2 style="font-size:24px">Sign in to your plan</h2>
+    <div class="fields"><label class="wide">Email<input type="email" id="a-email" required autocomplete="username"></label>
+    <label class="wide">Password<input type="password" id="a-pass" required minlength="8" autocomplete="current-password"></label></div>
+    <div class="actions"><button class="btn primary" type="submit">Sign in</button><button class="btn" type="button" id="a-signup">First time: create my account</button></div>
+    <p id="auth-msg" class="meta" style="margin:0;color:var(--muted)" aria-live="polite"></p></form></div>
+  <div class="wrap" id="board-wrap"><div id="status" class="notice">Loading the plan…</div>
+  <div class="board" id="board" hidden>
+    <div class="labels" id="labels"></div>
+    <div class="scroll" id="scroll"></div>
+  </div></div>
+
+  <section class="sec wrap" aria-labelledby="ws-h">
+    <div class="sec-h"><h2 id="ws-h">Workstreams</h2><p>Tick tasks off as you go. Bars on the timeline fill up with progress.</p></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="sec wrap" aria-labelledby="ed-h">
+    <div class="sec-h"><h2 id="ed-h">Add to the timeline</h2><p id="ed-sub">A stretch of work gets a bar and a checklist. A deadline gets a diamond.</p></div>
+    <form class="editor" id="editor">
+      <div class="fields">
+        <label class="wide">Name<input id="f-name" required maxlength="60" placeholder="e.g. Print the final poster"></label>
+        <label>Type<select id="f-kind"><option value="phase">Stretch of work</option><option value="milestone">Deadline</option></select></label>
+        <label>Group<select id="f-group"><option value="study">Uni</option><option value="build">Build</option><option value="show">Show</option><option value="business">Business</option></select></label>
+        <label><span id="l-start">Start</span><input type="date" id="f-start" required></label>
+        <label id="w-end">End<input type="date" id="f-end"></label>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="submit" id="f-save">Add to timeline</button>
+        <button class="btn" type="button" id="f-cancel" hidden>Cancel</button>
+        <button class="btn danger" type="button" id="f-del" hidden>Delete</button>
+      </div>
+    </form>
+  </section>
+</main>
+<footer class="wrap">Saved to your Supabase database, on any device you sign in from. The blue chalk line is today. <button class="btn small" id="signout" hidden>Sign out</button></footer>
+
+<script>
+const GROUPS={study:"Uni",build:"Build",show:"Show",business:"Business"};
+const DAY=30, ROW=40, AXIS=58, MSR=34;
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+let db=null, phases=[], tasks=[], gotP=false, gotT=false, editing=null, delArm=false, readOnly=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dn=s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
+const ds=n=>{const t=new Date(n*864e5);return t.toISOString().slice(0,10)};
+const fmt=s=>{const t=new Date(dn(s)*864e5);return WD[t.getUTCDay()]+" "+t.getUTCDate()+" "+MON[t.getUTCMonth()]};
+const short=s=>{const t=new Date(dn(s)*864e5);return t.getUTCDate()+" "+MON[t.getUTCMonth()]};
+function todayStr(){const t=new Date();return t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0")}
+const col=g=>`var(--g-${GROUPS[g]?g:"study"})`;
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3200)}
+function fail(e){ if(e&&e.code==="invalid_argument"){readOnly=true;render();toast("You can view this plan but not change it.");} else if(e&&e.code==="quota_exceeded"){toast("The plan is full. Delete a few items first.");} else toast("That didn't save. Check your connection and try again."); }
+
+function render(){
+  const today=todayStr(), T=dn(today);
+  const ms=phases.filter(p=>p.kind==="milestone").sort((a,b)=>a.start.localeCompare(b.start));
+  const bars=phases.filter(p=>p.kind!=="milestone").sort((a,b)=>a.start.localeCompare(b.start)||(a.order??0)-(b.order??0)||a.name.localeCompare(b.name));
+  const tasksOf=id=>tasks.filter(t=>t.phaseId===id).sort((a,b)=>(a.order??0)-(b.order??0));
+
+  // deadlines strip
+  $("deadlines").innerHTML=ms.map(m=>{const d=dn(m.start)-T;const c=d>1?d+" days":d===1?"tomorrow":d===0?"today":"done";
+    return `<div class="dl ${d<0?"past":""}"><span class="dia"></span><div><b>${esc(m.name)}</b><div class="when">${fmt(m.start)}</div></div><span class="count">${c}</span></div>`}).join("");
+  $("legend").innerHTML=Object.entries(GROUPS).map(([k,v])=>`<span><i class="sw" style="background:${col(k)}"></i>${v}</span>`).join("")+
+    `<span><i class="sw" style="background:var(--paint);transform:rotate(45deg);width:9px;height:9px"></i>Deadline</span><span><i class="sw" style="background:var(--chalk);width:3px"></i>Today</span>`;
+
+  const loaded=gotP&&gotT;
+  if(!loaded){return}
+  if(!phases.length){$("status").hidden=false;$("status").textContent="Nothing on the timeline yet. Add the first stretch of work or deadline below.";$("board").hidden=true;$("cards").innerHTML="";return}
+  $("status").hidden=true;$("board").hidden=false;
+
+  // range
+  let lo=Math.min(T,...phases.map(p=>dn(p.start)))-1, hi=Math.max(T,...phases.map(p=>dn(p.end||p.start)))+2;
+  const days=hi-lo, W=days*DAY, H=AXIS+MSR+bars.length*ROW+6, x=n=>(n-lo)*DAY;
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline from ${short(ds(lo))} to ${short(ds(hi-1))}">`;
+  for(let i=0;i<days;i++){const n=lo+i,wd=new Date(n*864e5).getUTCDay();
+    if(wd===0||wd===6) s+=`<rect x="${x(n)}" y="${AXIS}" width="${DAY}" height="${H-AXIS}" fill="var(--soft)"/>`;}
+  // row lines
+  s+=`<line x1="0" x2="${W}" y1="${AXIS}" y2="${AXIS}" stroke="var(--line)"/>`;
+  for(let r=0;r<=bars.length;r++){const y=AXIS+MSR+r*ROW;s+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/>`}
+  // tape ruler
+  s+=`<rect x="0" y="22" width="${W}" height="30" fill="var(--tape)"/>`;
+  for(let i=0;i<days;i++){const n=lo+i,t=new Date(n*864e5),wd=t.getUTCDay(),d=t.getUTCDate(),X=x(n);
+    const mon=wd===1, first=d===1||i===0;
+    s+=`<line x1="${X}" x2="${X}" y1="22" y2="${mon?42:31}" stroke="var(--tape-ink)" stroke-width="${mon?1.6:1}"/>`;
+    s+=`<line x1="${X+DAY/2}" x2="${X+DAY/2}" y1="22" y2="27" stroke="var(--tape-ink)" stroke-width=".7"/>`;
+    s+=`<text x="${X+DAY/2}" y="47" text-anchor="middle" font-size="11" font-family="IBM Plex Mono,monospace" fill="var(--tape-ink)" font-weight="${n===T?700:400}">${d}</text>`;
+    const TX=x(T)+DAY/2, near=Math.abs(X+4-TX)<70||(X<TX&&X+80>TX-24), LX=near?Math.max(X+4,TX+28):X+4;
+    if(first) s+=`<text x="${LX}" y="15" font-size="12" font-weight="600" fill="var(--muted)" letter-spacing="1">${MON[t.getUTCMonth()].toUpperCase()} ${t.getUTCFullYear()}</text>`;
+    else if(mon&&!near) s+=`<text x="${X+3}" y="15" font-size="10.5" fill="var(--muted)">w/c ${d}</text>`;}
+  // deadline guides + diamonds
+  ms.forEach((m,i)=>{const X=x(dn(m.start))+DAY/2, y=AXIS+MSR/2;
+    s+=`<line x1="${X}" x2="${X}" y1="${AXIS+MSR}" y2="${H}" stroke="var(--paint)" stroke-width="1" stroke-dasharray="2 3" opacity=".7"/>`;
+    s+=`<rect x="${X-6}" y="${y-6}" width="12" height="12" fill="var(--paint)" transform="rotate(45 ${X} ${y})"/>`;
+    s+=`<text x="${X+11}" y="${y+4}" font-size="11.5" font-weight="600" fill="var(--ink)">${esc(m.name)}</text>`;});
+  // bars
+  bars.forEach((p,i)=>{const a=dn(p.start),b=dn(p.end||p.start)+1,y=AXIS+MSR+i*ROW+10,w=(b-a)*DAY-4,X=x(a)+2;
+    const ts=tasksOf(p.id),dn_=ts.filter(t=>t.done).length,pct=ts.length?dn_/ts.length:0;
+    s+=`<g class="bar" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${dn_} of ${ts.length} done">`+
+      `<rect class="track" x="${X}" y="${y}" width="${w}" height="20" rx="4" fill="${col(p.group)}" fill-opacity=".22" stroke="${col(p.group)}" stroke-opacity=".6"/>`+
+      `<rect x="${X}" y="${y}" width="${Math.max(0,w*pct)}" height="20" rx="4" fill="${col(p.group)}"/>`+
+      `<text x="${X+w+6}" y="${y+14}" font-size="11" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${ts.length?dn_+"/"+ts.length:""}</text></g>`;});
+  // today
+  if(T>=lo&&T<hi){const X=x(T)+DAY/2;
+    s+=`<line x1="${X}" x2="${X}" y1="22" y2="${H}" stroke="var(--chalk)" stroke-width="2"/>`+
+       `<rect x="${X-22}" y="2" width="44" height="16" rx="3" fill="var(--chalk)"/><text x="${X}" y="14" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--surface)" letter-spacing=".5">TODAY</text>`;}
+  s+=`</svg>`;
+  const sc=$("scroll"), keep=sc.scrollLeft; sc.innerHTML=s;
+  if(!sc.dataset.init){sc.dataset.init=1;sc.scrollLeft=Math.max(0,x(T)-3*DAY)} else sc.scrollLeft=keep;
+  sc.querySelectorAll(".bar").forEach(g=>{const go=()=>jump(g.dataset.id);g.addEventListener("click",go);g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}})});
+
+  $("labels").innerHTML=`<div class="axis"></div><div class="msl">Deadlines</div>`+bars.map(p=>
+    `<div class="lab"><button data-id="${esc(p.id)}"><span class="n"><i class="sw" style="background:${col(p.group)}"></i>${esc(p.name)}</span></button><span class="d">${short(p.start)} – ${short(p.end||p.start)}</span></div>`).join("");
+  $("labels").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>jump(b.dataset.id)));
+
+  // cards
+  $("cards").innerHTML=bars.map(p=>{const ts=tasksOf(p.id),d=ts.filter(t=>t.done).length,len=dn(p.end||p.start)-dn(p.start)+1;
+    return `<article class="card" id="c-${esc(p.id)}">
+      <div class="card-h"><div><h3>${esc(p.name)}</h3><div class="meta">${fmt(p.start)} → ${fmt(p.end||p.start)} · ${len} day${len>1?"s":""} · ${GROUPS[p.group]||""}</div></div>
+      ${readOnly?"":`<button class="btn small" data-edit="${esc(p.id)}">Edit</button>`}</div>
+      <div class="prog"><i style="width:${ts.length?d/ts.length*100:0}%;background:${col(p.group)}"></i></div>
+      <div class="meta">${ts.length?`${d} of ${ts.length} done`:"No tasks yet"}</div>
+      <ul class="tasks">${ts.map(t=>`<li class="${t.done?"done":""}"><input type="checkbox" id="t-${esc(t.id)}" data-t="${esc(t.id)}" ${t.done?"checked":""} ${readOnly?"disabled":""}><label for="t-${esc(t.id)}">${esc(t.text)}</label>${readOnly?"<span></span>":`<button class="x" data-del="${esc(t.id)}" aria-label="Remove task">×</button>`}</li>`).join("")}</ul>
+      ${readOnly?"":`<form class="addtask" data-add="${esc(p.id)}"><input id="a-${esc(p.id)}" placeholder="Add a task" maxlength="140" aria-label="New task for ${esc(p.name)}"><button class="btn small" type="submit">Add</button></form>`}
+    </article>`}).join("");
+  $("cards").querySelectorAll("[data-t]").forEach(c=>c.addEventListener("change",()=>{db.doc("tasks/"+c.dataset.t).update({done:c.checked}).catch(fail)}));
+  $("cards").querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{db.doc("tasks/"+b.dataset.del).delete().catch(fail)}));
+  $("cards").querySelectorAll("[data-add]").forEach(f=>f.addEventListener("submit",e=>{e.preventDefault();const i=f.querySelector("input"),v=i.value.trim();if(!v)return;
+    i.value="";db.collection("tasks").add({phaseId:f.dataset.add,text:v,done:false,order:Date.now()}).catch(fail)}));
+  $("cards").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>startEdit(b.dataset.edit)));
+  // milestones editable from strip
+  if(!readOnly) $("deadlines").querySelectorAll(".dl").forEach((el,i)=>{el.style.cursor="pointer";el.title="Edit this deadline";el.onclick=()=>startEdit(ms[i].id)});
+  $("editor").hidden=readOnly;
+}
+function jump(id){const c=$("c-"+id);if(!c)return;c.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});c.classList.add("flash");setTimeout(()=>c.classList.remove("flash"),1400)}
+
+// editor
+const F={name:$("f-name"),kind:$("f-kind"),group:$("f-group"),start:$("f-start"),end:$("f-end")};
+function syncKind(){const m=F.kind.value==="milestone";$("w-end").hidden=m;$("l-start").textContent=m?"Date":"Start"}
+F.kind.addEventListener("change",syncKind);
+function resetEditor(){editing=null;delArm=false;$("editor").reset();F.start.value=todayStr();syncKind();$("f-save").textContent="Add to timeline";$("f-cancel").hidden=true;$("f-del").hidden=true;$("f-del").textContent="Delete";$("ed-h").textContent="Add to the timeline"}
+function startEdit(id){const p=phases.find(q=>q.id===id);if(!p)return;editing=id;delArm=false;
+  F.name.value=p.name;F.kind.value=p.kind==="milestone"?"milestone":"phase";F.group.value=p.group||"study";F.start.value=p.start;F.end.value=p.end||p.start;syncKind();
+  $("f-save").textContent="Save changes";$("f-cancel").hidden=false;$("f-del").hidden=false;$("f-del").textContent="Delete";$("ed-h").textContent="Edit “"+p.name+"”";
+  $("editor").scrollIntoView({behavior:"smooth",block:"center"});F.name.focus({preventScroll:true})}
+$("f-cancel").addEventListener("click",resetEditor);
+$("editor").addEventListener("submit",async e=>{e.preventDefault();if(!db)return;
+  const kind=F.kind.value,start=F.start.value;let end=kind==="milestone"?start:(F.end.value||start);
+  if(end<start){toast("The end date is before the start date.");return}
+  const body={name:F.name.value.trim(),kind,group:F.group.value,start,end};
+  if(!body.name)return;
+  try{ if(editing) await db.doc("phases/"+editing).update(body); else await db.collection("phases").add({...body,order:Date.now()});
+    toast(editing?"Saved":"Added to the timeline");resetEditor();}catch(err){fail(err)}});
+$("f-del").addEventListener("click",async()=>{if(!editing)return;
+  if(!delArm){delArm=true;$("f-del").textContent="Click again to delete";return}
+  const id=editing;try{for(const t of tasks.filter(t=>t.phaseId===id)) await db.doc("tasks/"+t.id).delete();
+    await db.doc("phases/"+id).delete();toast("Deleted");resetEditor()}catch(err){fail(err)}});
+resetEditor();
+
+
+if(typeof supabase==="undefined"){document.getElementById("status").textContent="The page couldn't load its database library. Check your connection and refresh.";throw new Error("supabase-js not loaded")}
+// ---- Supabase backend ----
+const SB_URL="https://jgfdjsqngqcmwuqximsv.supabase.co";
+const SB_KEY="sb_publishable_uYyFgaek9Jq0I1mRNKzY-g_ge3BKm8_";
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const toRow=(t,d)=>{const r={...d};if(t==="tasks"&&"phaseId" in r){r.phase_id=r.phaseId;delete r.phaseId}r.updated_at=new Date().toISOString();return r};
+const fromRow=(t,r)=>{const o={...r};if(t==="tasks"){o.phaseId=o.phase_id;delete o.phase_id}delete o.updated_at;return o};
+const chk=({error})=>{if(error)throw {code:error.code==="42501"?"invalid_argument":"unavailable",message:error.message}};
+const subs={phases:[],tasks:[]};
+async function pull(t){const {data,error}=await sb.from(t).select("*");if(error){subs[t].forEach(s=>s.err&&s.err(error));return}
+  const docs=data.map(r=>{const o=fromRow(t,r);return{id:o.id,data:()=>o}});subs[t].forEach(s=>s.next({docs,size:docs.length,metadata:{fromCache:false}}))}
+const shimDb={
+  collection:t=>({onSnapshot:(next,err)=>{subs[t].push({next,err});pull(t);return()=>{}},
+    add:async d=>{chk(await sb.from(t).insert(toRow(t,d)));pull(t)}}),
+  doc:p=>{const [t,id]=p.split("/");return{
+    update:async d=>{chk(await sb.from(t).update(toRow(t,d)).eq("id",id));pull(t)},
+    delete:async()=>{chk(await sb.from(t).delete().eq("id",id));pull(t)}}}
+};
+function startData(){
+  db=shimDb;
+  const timer=setTimeout(()=>{if(!(gotP&&gotT))$("status").textContent="Still trying to reach the saved plan. Check your connection."},10000);
+  const done=()=>{if(gotP&&gotT)clearTimeout(timer);render()};
+  db.collection("phases").onSnapshot(s=>{phases=s.docs.map(d=>({id:d.id,...d.data()}));gotP=true;done()},
+    e=>{gotP=true;$("status").textContent="The plan couldn't load: "+e.message;done()});
+  db.collection("tasks").onSnapshot(s=>{tasks=s.docs.map(d=>({id:d.id,...d.data()}));gotT=true;done()},e=>{gotT=true;done()});
+  sb.channel("plan").on("postgres_changes",{event:"*",schema:"public",table:"phases"},()=>pull("phases"))
+    .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},()=>pull("tasks")).subscribe();
+}
+// ---- sign in ----
+const authBox=$("auth"),authMsg=$("auth-msg");
+function showAuth(on){authBox.hidden=!on;$("board-wrap").hidden=on;document.querySelectorAll("main .sec").forEach(s=>s.hidden=on);$("signout").hidden=on}
+$("auth-form").addEventListener("submit",async e=>{e.preventDefault();authMsg.textContent="Signing in…";
+  const {error}=await sb.auth.signInWithPassword({email:$("a-email").value.trim(),password:$("a-pass").value});
+  authMsg.textContent=error?("Couldn't sign in: "+error.message):""});
+$("a-signup").addEventListener("click",async()=>{const email=$("a-email").value.trim(),password=$("a-pass").value;
+  if(!email||password.length<8){authMsg.textContent="Enter your email and a password of at least 8 characters first.";return}
+  authMsg.textContent="Creating your account…";
+  const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.href.split("#")[0]}});
+  authMsg.textContent=error?("Couldn't create the account: "+error.message):(data.session?"":"Check your email and click the confirmation link, then sign in here.")});
+$("signout").addEventListener("click",()=>sb.auth.signOut());
+let started=false;
+sb.auth.onAuthStateChange((ev,session)=>{if(session){showAuth(false);if(!started){started=true;startData()}}else{showAuth(true);if(started)location.reload()}});
+
+</script>
+
+</body>
+</html>
