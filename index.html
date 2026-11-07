@@ -57,8 +57,9 @@ h1{font-size:clamp(34px,6vw,54px);font-weight:700;line-height:1}
 .labels .lab .n{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px}
 .labels .lab .d{font-family:var(--mono);font-size:11px;color:var(--muted)}
 .labels .axis{height:58px}
-.labels .msl{height:34px;border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.labels .msl{height:62px;border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .scroll{overflow-x:auto;min-width:0}
+.zoom{display:flex;gap:6px;align-items:center;margin-bottom:10px;font-size:13px;color:var(--muted)}.zoom .on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .scroll svg{display:block}
 .lab button{all:unset;cursor:pointer}
 svg .bar{cursor:pointer}
@@ -118,6 +119,7 @@ footer{padding-block:28px 40px;color:var(--muted);font-size:13px}
 
 <main>
   <div class="wrap" id="board-wrap"><div id="status" class="notice">Loading the plan…</div>
+  <div class="zoom" id="zoom" role="group" aria-label="Zoom"><span>Zoom</span><button class="btn small" data-z="30">Days</button><button class="btn small" data-z="12">Weeks</button><button class="btn small" data-z="4">Months</button></div>
   <div class="board" id="board" hidden>
     <div class="labels" id="labels"></div>
     <div class="scroll" id="scroll"></div>
@@ -150,11 +152,13 @@ footer{padding-block:28px 40px;color:var(--muted);font-size:13px}
 
 <script>
 const GROUPS={study:"Uni",build:"Build",show:"Show",business:"Business"};
-const DAY=30, ROW=40, AXIS=58, MSR=34;
+let DAY=12; try{DAY=+localStorage.getItem("zoom")||12}catch(e){}
+const ROW=40, AXIS=58, MSR=62;
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 let db=null, phases=[], tasks=[], gotP=false, gotT=false, editing=null, delArm=false, readOnly=false;
 const $=id=>document.getElementById(id);
+function setZoom(z){DAY=z;try{localStorage.setItem("zoom",z)}catch(e){}document.querySelectorAll("#zoom [data-z]").forEach(b=>b.classList.toggle("on",+b.dataset.z===z));const sc=$("scroll");if(sc)delete sc.dataset.init;render()}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dn=s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5};
 const ds=n=>{const t=new Date(n*864e5);return t.toISOString().slice(0,10)};
@@ -187,22 +191,27 @@ function render(){
   const days=hi-lo, W=days*DAY, H=AXIS+MSR+bars.length*ROW+6, x=n=>(n-lo)*DAY;
   let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline from ${short(ds(lo))} to ${short(ds(hi-1))}">`;
   for(let i=0;i<days;i++){const n=lo+i,wd=new Date(n*864e5).getUTCDay();
-    if(wd===0||wd===6) s+=`<rect x="${x(n)}" y="${AXIS}" width="${DAY}" height="${H-AXIS}" fill="var(--soft)"/>`;}
+    if(DAY>=8&&(wd===0||wd===6)) s+=`<rect x="${x(n)}" y="${AXIS}" width="${DAY}" height="${H-AXIS}" fill="var(--soft)"/>`;}
   // row lines
   s+=`<line x1="0" x2="${W}" y1="${AXIS}" y2="${AXIS}" stroke="var(--line)"/>`;
   for(let r=0;r<=bars.length;r++){const y=AXIS+MSR+r*ROW;s+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/>`}
   // tape ruler
   s+=`<rect x="0" y="22" width="${W}" height="30" fill="var(--tape)"/>`;
   for(let i=0;i<days;i++){const n=lo+i,t=new Date(n*864e5),wd=t.getUTCDay(),d=t.getUTCDate(),X=x(n);
-    const mon=wd===1, first=d===1||i===0;
-    s+=`<line x1="${X}" x2="${X}" y1="22" y2="${mon?42:31}" stroke="var(--tape-ink)" stroke-width="${mon?1.6:1}"/>`;
-    s+=`<line x1="${X+DAY/2}" x2="${X+DAY/2}" y1="22" y2="27" stroke="var(--tape-ink)" stroke-width=".7"/>`;
-    s+=`<text x="${X+DAY/2}" y="47" text-anchor="middle" font-size="11" font-family="IBM Plex Mono,monospace" fill="var(--tape-ink)" font-weight="${n===T?700:400}">${d}</text>`;
+    const mon=wd===1, first=d===1||i===0, fine=DAY>=20, mid=DAY>=8;
+    if(d===1) s+=`<line x1="${X}" x2="${X}" y1="22" y2="52" stroke="var(--tape-ink)" stroke-width="1.8"/>`;
+    else if(mon) s+=`<line x1="${X}" x2="${X}" y1="22" y2="${fine?42:36}" stroke="var(--tape-ink)" stroke-width="1.4"/>`;
+    else if(mid) s+=`<line x1="${X}" x2="${X}" y1="22" y2="31" stroke="var(--tape-ink)" stroke-width="1"/>`;
+    if(fine){s+=`<line x1="${X+DAY/2}" x2="${X+DAY/2}" y1="22" y2="27" stroke="var(--tape-ink)" stroke-width=".7"/>`;
+      s+=`<text x="${X+DAY/2}" y="47" text-anchor="middle" font-size="11" font-family="IBM Plex Mono,monospace" fill="var(--tape-ink)" font-weight="${n===T?700:400}">${d}</text>`;}
+    else if(mid&&mon) s+=`<text x="${X+3}" y="48" font-size="10" font-family="IBM Plex Mono,monospace" fill="var(--tape-ink)">${d}</text>`;
+    else if(!mid&&d===1) s+=`<text x="${X+4}" y="47" font-size="11" font-weight="600" fill="var(--tape-ink)">${MON[t.getUTCMonth()]}</text>`;
     const TX=x(T)+DAY/2, near=Math.abs(X+4-TX)<70||(X<TX&&X+80>TX-24), LX=near?Math.max(X+4,TX+28):X+4;
-    if(first) s+=`<text x="${LX}" y="15" font-size="12" font-weight="600" fill="var(--muted)" letter-spacing="1">${MON[t.getUTCMonth()].toUpperCase()} ${t.getUTCFullYear()}</text>`;
-    else if(mon&&!near) s+=`<text x="${X+3}" y="15" font-size="10.5" fill="var(--muted)">w/c ${d}</text>`;}
+    if(first&&(mid||d===1||i===0)) s+=`<text x="${LX}" y="15" font-size="12" font-weight="600" fill="var(--muted)" letter-spacing="1">${mid?MON[t.getUTCMonth()].toUpperCase()+" ":""}${(!mid&&!(t.getUTCMonth()===0||i===0))?"":t.getUTCFullYear()}</text>`;
+    else if(fine&&mon&&!near) s+=`<text x="${X+3}" y="15" font-size="10.5" fill="var(--muted)">w/c ${d}</text>`;}
   // deadline guides + diamonds
-  ms.forEach((m,i)=>{const X=x(dn(m.start))+DAY/2, y=AXIS+MSR/2;
+  const lane=[-1e9,-1e9,-1e9];
+  ms.forEach((m,i)=>{const X=x(dn(m.start))+DAY/2, w=m.name.length*6.4+18; let k=lane.findIndex(e=>e<X-8); if(k<0)k=lane.indexOf(Math.min(...lane)); lane[k]=X+w; const y=AXIS+14+k*17;
     s+=`<line x1="${X}" x2="${X}" y1="${AXIS+MSR}" y2="${H}" stroke="var(--paint)" stroke-width="1" stroke-dasharray="2 3" opacity=".7"/>`;
     s+=`<rect x="${X-6}" y="${y-6}" width="12" height="12" fill="var(--paint)" transform="rotate(45 ${X} ${y})"/>`;
     s+=`<text x="${X+11}" y="${y+4}" font-size="11.5" font-weight="600" fill="var(--ink)">${esc(m.name)}</text>`;});
@@ -216,7 +225,7 @@ function render(){
   // today
   if(T>=lo&&T<hi){const X=x(T)+DAY/2;
     s+=`<line x1="${X}" x2="${X}" y1="22" y2="${H}" stroke="var(--chalk)" stroke-width="2"/>`+
-       `<rect x="${X-22}" y="2" width="44" height="16" rx="3" fill="var(--chalk)"/><text x="${X}" y="14" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--surface)" letter-spacing=".5">TODAY</text>`;}
+       `<rect x="${Math.max(0,X-22)}" y="2" width="44" height="16" rx="3" fill="var(--chalk)"/><text x="${Math.max(22,X)}" y="14" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--surface)" letter-spacing=".5">TODAY</text>`;}
   s+=`</svg>`;
   const sc=$("scroll"), keep=sc.scrollLeft; sc.innerHTML=s;
   if(!sc.dataset.init){sc.dataset.init=1;sc.scrollLeft=Math.max(0,x(T)-3*DAY)} else sc.scrollLeft=keep;
@@ -269,6 +278,7 @@ $("f-del").addEventListener("click",async()=>{if(!editing)return;
   const id=editing;try{for(const t of tasks.filter(t=>t.phaseId===id)) await db.doc("tasks/"+t.id).delete();
     await db.doc("phases/"+id).delete();toast("Deleted");resetEditor()}catch(err){fail(err)}});
 resetEditor();
+document.querySelectorAll('#zoom [data-z]').forEach(b=>{b.classList.toggle('on',+b.dataset.z===DAY);b.addEventListener('click',()=>setZoom(+b.dataset.z))});
 
 
 if(typeof supabase==="undefined"){document.getElementById("status").textContent="The page couldn't load its database library. Check your connection and refresh.";throw new Error("supabase-js not loaded")}
